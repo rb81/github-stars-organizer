@@ -1,0 +1,5 @@
+.DS_Store
+.env
+venv
+repo_category_mapping.json
+starred_repos.json

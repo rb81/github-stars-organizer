@@ -1,0 +1,21 @@
+{
+  "Development Tools": "Tools for software development, including code management, documentation, and deployment.",
+  "Productivity Tools": "Applications and tools designed to enhance personal and professional productivity.",
+  "Data Management": "Tools for managing, processing, and visualizing data.",
+  "Security and Privacy": "Resources and tools for enhancing computer security and online privacy.",
+  "AI and Machine Learning": "Frameworks, models, and tools related to artificial intelligence and machine learning.",
+  "Web Development": "Libraries and tools for building and maintaining websites and web applications.",
+  "Media Tools": "Applications for managing and editing various types of media like videos, images, and audio.",
+  "System Management": "Tools for managing operating systems, virtualization, and remote access.",
+  "File and Document Management": "Tools for organizing, converting, and securing files and documents.",
+  "Networking and Communication": "Applications and tools for online communication and network management.",
+  "Design and UX": "Tools related to user interface and user experience design.",
+  "Browser and Extensions": "Web browsers and their extensions that enhance browsing experience.",
+  "Natural Language Processing": "Libraries and tools for working with human language data.",
+  "Financial Tools": "Applications for managing personal finances and financial data.",
+  "Gaming and Entertainment": "Resources and tools related to gaming and digital entertainment.",
+  "Educational Resources": "Learning materials and resources for various subjects, including AI.",
+  "Cryptography and Blockchain": "Tools and libraries for encryption and blockchain development.",
+  "Mobile Development": "Resources and tools for mobile application development and reverse engineering.",
+  "Other": "Miscellaneous repos of interest."
+}
