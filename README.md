@@ -1,5 +1,7 @@
 # GitHub Stars Organizer
 
+![GitHub Stars](/header.png)
+
 This project automatically organizes and categorizes starred GitHub repositories using the Anthropic Claude API. It updates a GitHub repository with categorized lists of starred repos and maintains an up-to-date README with statistics.
 
 ## Features
