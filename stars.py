@@ -6,10 +6,12 @@ from github import Github
 from github.GithubException import GithubException
 import anthropic
 from dotenv import load_dotenv
+from tqdm import tqdm
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description="Organize GitHub starred repos")
 parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+parser.add_argument('--output', default='.', help='Output folder for category lists and README')
 args = parser.parse_args()
 
 # Set up logging
@@ -43,20 +45,23 @@ def download_starred_repos(github_token):
         starred_repos = user.get_starred()
 
         repos = {}
-        for repo in starred_repos:
-            try:
-                readme_content = repo.get_readme().decoded_content.decode('utf-8')
-            except GithubException:
-                readme_content = ""
+        total_repos = starred_repos.totalCount
+        with tqdm(total=total_repos, desc="Downloading starred repos") as pbar:
+            for repo in starred_repos:
+                try:
+                    readme_content = repo.get_readme().decoded_content.decode('utf-8')
+                except GithubException:
+                    readme_content = ""
 
-            repos[repo.full_name] = {
-                'Name': repo.name,
-                'URL': repo.html_url,
-                'Description': repo.description or '',
-                'Owner': repo.owner.login,
-                'FullName': repo.full_name,
-                'README': readme_content[:5000]  # Limit to first 5000 characters to avoid very large payloads
-            }
+                repos[repo.full_name] = {
+                    'Name': repo.name,
+                    'URL': repo.html_url,
+                    'Description': repo.description or '',
+                    'Owner': repo.owner.login,
+                    'FullName': repo.full_name,
+                    'README': readme_content[:5000]  # Limit to first 5000 characters to avoid very large payloads
+                }
+                pbar.update(1)
 
         save_json_file(repos, STARRED_REPOS_FILE)
         logger.info(f"Downloaded {len(repos)} starred repos")
@@ -151,45 +156,60 @@ def update_github_lists(github_token, categories, starred_repos, repo_category_m
 
         changes_made = False
 
-        for category, repos in category_repos.items():
-            file_name = f"{clean_filename(category)}.md"
-            
-            if not repos:
-                # If category is empty, delete the file if it exists
+        output_folder = os.path.expanduser(args.output)
+        os.makedirs(output_folder, exist_ok=True)
+
+        with tqdm(total=len(category_repos), desc="Updating GitHub lists") as pbar:
+            for category, repos in category_repos.items():
+                file_name = f"{clean_filename(category)}.md"
+                local_file_path = os.path.join(output_folder, file_name)
+                
+                if not repos:
+                    # If category is empty, delete the file if it exists in the repo
+                    if file_name in existing_files:
+                        file = repo.get_contents(file_name)
+                        repo.delete_file(file_name, f"Remove empty category: {category}", file.sha)
+                        logger.info(f"Deleted empty category file: {file_name}")
+                        changes_made = True
+                    pbar.update(1)
+                    continue
+
+                content = f"# {category}\n\n{categories[category]}\n\n"
+                
+                for repo_full_name in repos:
+                    repo_data = starred_repos[repo_full_name]
+                    content += f"## [{repo_data['Name']}]({repo_data['URL']})\n\n"
+                    content += f"{repo_data['Description']}\n\n"
+                    content += f"[![GitHub stars](https://img.shields.io/github/stars/{repo_data['FullName']}?style=social)](https://github.com/{repo_data['FullName']})\n\n"
+                    content += "---\n\n"
+
+                # Save the content locally
+                with open(local_file_path, 'w') as f:
+                    f.write(content)
+                logger.info(f"Saved {file_name} locally to {local_file_path}")
+
                 if file_name in existing_files:
                     file = repo.get_contents(file_name)
-                    repo.delete_file(file_name, f"Remove empty category: {category}", file.sha)
-                    logger.info(f"Deleted empty category file: {file_name}")
+                    if file.decoded_content.decode() != content:
+                        repo.update_file(file_name, f"Update {category} list", content, file.sha)
+                        logger.info(f"Updated {file_name} in the repo")
+                        changes_made = True
+                    existing_files.remove(file_name)
+                else:
+                    repo.create_file(file_name, f"Create {category} list", content)
+                    logger.info(f"Created {file_name} in the repo")
                     changes_made = True
-                continue
 
-            content = f"# {category}\n\n{categories[category]}\n\n"
-            
-            for repo_full_name in repos:
-                repo_data = starred_repos[repo_full_name]
-                content += f"## [{repo_data['Name']}]({repo_data['URL']})\n\n"
-                content += f"{repo_data['Description']}\n\n"
-                content += f"[![GitHub stars](https://img.shields.io/github/stars/{repo_data['FullName']}?style=social)](https://github.com/{repo_data['FullName']})\n\n"
-                content += "---\n\n"
-
-            if file_name in existing_files:
-                file = repo.get_contents(file_name)
-                if file.decoded_content.decode() != content:
-                    repo.update_file(file_name, f"Update {category} list", content, file.sha)
-                    logger.info(f"Updated {file_name}")
-                    changes_made = True
-                existing_files.remove(file_name)
-            else:
-                repo.create_file(file_name, f"Create {category} list", content)
-                logger.info(f"Created {file_name}")
-                changes_made = True
+                pbar.update(1)
 
         # Delete files for categories that no longer exist or are empty
-        for file_name in existing_files:
-            file = repo.get_contents(file_name)
-            repo.delete_file(file_name, f"Remove {file_name}", file.sha)
-            logger.info(f"Deleted {file_name}")
-            changes_made = True
+        with tqdm(total=len(existing_files), desc="Deleting obsolete files") as pbar:
+            for file_name in existing_files:
+                file = repo.get_contents(file_name)
+                repo.delete_file(file_name, f"Remove {file_name}", file.sha)
+                logger.info(f"Deleted {file_name} from the repo")
+                changes_made = True
+                pbar.update(1)
 
         return changes_made
 
@@ -230,13 +250,20 @@ def update_readme(github_token, starred_repos, repo_category_mapping):
 For detailed lists of repositories by category, please check the individual category files in this repository.
 """
 
+        # Save README locally
+        output_folder = os.path.expanduser(args.output)
+        readme_path = os.path.join(output_folder, "README.md")
+        with open(readme_path, 'w') as f:
+            f.write(content)
+        logger.info(f"Saved README.md locally to {readme_path}")
+
         try:
             file = repo.get_contents("README.md")
             repo.update_file("README.md", "Update README with latest stats", content, file.sha)
-            logger.info("Updated README.md")
+            logger.info("Updated README.md in the repo")
         except GithubException:
             repo.create_file("README.md", "Create README with stats", content)
-            logger.info("Created README.md")
+            logger.info("Created README.md in the repo")
 
     except GithubException as e:
         logger.error(f"GitHub API error: {e.status} - {e.data}")
@@ -287,16 +314,17 @@ def main():
         # Process repos in batches
         batch_size = 50
         repos_list = list(repos_to_process.values())
-        for i in range(0, len(repos_list), batch_size):
-            batch = {repo['FullName']: repo for repo in repos_list[i:i+batch_size]}
-            
-            new_mappings = organize_repos_with_claude(anthropic_api_key, batch, categories)
-            
-            # Update repo-category mapping
-            for repo, repo_categories in new_mappings.items():
-                repo_category_mapping[repo] = repo_categories
-            
-            logger.info(f"Processed batch {i//batch_size + 1}/{(len(repos_list) + batch_size - 1)//batch_size}")
+        with tqdm(total=len(repos_list), desc="Organizing repos") as pbar:
+            for i in range(0, len(repos_list), batch_size):
+                batch = {repo['FullName']: repo for repo in repos_list[i:i+batch_size]}
+                
+                new_mappings = organize_repos_with_claude(anthropic_api_key, batch, categories)
+                
+                # Update repo-category mapping
+                for repo, repo_categories in new_mappings.items():
+                    repo_category_mapping[repo] = repo_categories
+                
+                pbar.update(len(batch))
 
     if changes_made:
         # Save updated repo-category mapping

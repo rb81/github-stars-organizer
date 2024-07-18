@@ -42,6 +42,12 @@ Run the script with:
 python stars.py
 ```
 
+Use the `--output` flag to save the categorized lists locally:
+
+```
+python stars.py --output ~/path/to/local/folder/
+```
+
 Use the `--debug` flag for detailed logging:
 
 ```
