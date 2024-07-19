@@ -11,7 +11,7 @@ from tqdm import tqdm
 # Set up argument parser
 parser = argparse.ArgumentParser(description="Organize GitHub starred repos")
 parser.add_argument('--debug', action='store_true', help='Enable debug logging')
-parser.add_argument('--output', default='.', help='Output folder for category lists and README')
+parser.add_argument('--output', default=None, help='Output folder for category lists and README')
 args = parser.parse_args()
 
 # Set up logging
@@ -183,10 +183,14 @@ def update_github_lists(github_token, categories, starred_repos, repo_category_m
                     content += f"[![GitHub stars](https://img.shields.io/github/stars/{repo_data['FullName']}?style=social)](https://github.com/{repo_data['FullName']})\n\n"
                     content += "---\n\n"
 
-                # Save the content locally
-                with open(local_file_path, 'w') as f:
-                    f.write(content)
-                logger.info(f"Saved {file_name} locally to {local_file_path}")
+                # Save the content locally only if output folder is specified
+                if args.output:
+                    output_folder = os.path.expanduser(args.output)
+                    os.makedirs(output_folder, exist_ok=True)
+                    local_file_path = os.path.join(output_folder, file_name)
+                    with open(local_file_path, 'w') as f:
+                        f.write(content)
+                    logger.info(f"Saved {file_name} locally to {local_file_path}")
 
                 if file_name in existing_files:
                     file = repo.get_contents(file_name)
@@ -250,12 +254,14 @@ def update_readme(github_token, starred_repos, repo_category_mapping):
 For detailed lists of repositories by category, please check the individual category files in this repository.
 """
 
-        # Save README locally
-        output_folder = os.path.expanduser(args.output)
-        readme_path = os.path.join(output_folder, "README.md")
-        with open(readme_path, 'w') as f:
-            f.write(content)
-        logger.info(f"Saved README.md locally to {readme_path}")
+        # Save README locally only if output folder is specified
+        if args.output:
+            output_folder = os.path.expanduser(args.output)
+            os.makedirs(output_folder, exist_ok=True)
+            readme_path = os.path.join(output_folder, "README.md")
+            with open(readme_path, 'w') as f:
+                f.write(content)
+            logger.info(f"Saved README.md locally to {readme_path}")
 
         try:
             file = repo.get_contents("README.md")
