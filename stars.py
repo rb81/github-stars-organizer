@@ -156,13 +156,9 @@ def update_github_lists(github_token, categories, starred_repos, repo_category_m
 
         changes_made = False
 
-        output_folder = os.path.expanduser(args.output)
-        os.makedirs(output_folder, exist_ok=True)
-
         with tqdm(total=len(category_repos), desc="Updating GitHub lists") as pbar:
             for category, repos in category_repos.items():
                 file_name = f"{clean_filename(category)}.md"
-                local_file_path = os.path.join(output_folder, file_name)
                 
                 if not repos:
                     # If category is empty, delete the file if it exists in the repo
