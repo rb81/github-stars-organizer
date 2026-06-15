@@ -1,5 +1,52 @@
-.DS_Store
-.env
-venv
-repo_category_mapping.json
+# Configuration with secrets
+config.yaml
+
+# Cache directory
+cache/
+
+# Output directory
+output/
+
+# Old files from previous version
 starred_repos.json
+repo_category_mapping.json
+categories.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

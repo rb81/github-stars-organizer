@@ -1,0 +1,28 @@
+# GitHub Stars Organizer Configuration
+
+# Your GitHub personal access token (required)
+# Get one at: https://github.com/settings/tokens
+github_token: YOUR_GITHUB_TOKEN_HERE
+
+# LLM Configuration
+llm:
+  # Base URL for the LLM API (OpenAI-compatible)
+  # Examples:
+  #   - Ollama: http://localhost:11434/v1
+  #   - OpenRouter: https://openrouter.ai/api/v1
+  #   - OpenAI: https://api.openai.com/v1
+  base_url: http://localhost:11434/v1
+  
+  # API key (use "ollama" or leave blank for local Ollama)
+  api_key: ollama
+  
+  # Model name to use
+  # Examples:
+  #   - Ollama: llama3.1, qwen2.5, mistral-nemo, etc.
+  #   - OpenRouter: anthropic/claude-3.5-sonnet, meta-llama/llama-3.1-70b-instruct, etc.
+  #   - OpenAI: gpt-4o, gpt-4o-mini, etc.
+  model: llama3.1
+
+# Optional settings
+# Maximum characters from each README to send to the LLM (default: 5000)
+readme_max_chars: 5000
